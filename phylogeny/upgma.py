@@ -19,23 +19,36 @@ class Node(object):
 			self.size = left.size + right.size
 		else:
 			self.size = 1
+		self.dist2parent = 0
 		self.h = h
+
+		# if left is None:
+		# 	self.left_length = self.h
+		# else:
+		# 	self.left_length = self.h - left.h
+		# if right is None:
+		# 	self.right_length = self.h
+		# else:
+		# 	self.right_length = self.h - right.h
 
 	def Newick(self):
 		if self.left is None and self.right is None:
-			print(self.label, end="")
+			print('%s:%.2f' % (self.label,self.dist2parent), end="")
 		else:
 			print("(", end="")
 			self.left.Newick()
 			print(",", end="")
 			self.right.Newick()
-			print(")", end="")
+			print('):%.2f' % self.dist2parent, end="")
 
 
 def Merge(D, T, i, j):
 	i, j = min(i,j), max(i,j)
 	label = T[i].label + ':' + T[j].label
-	ck = Node(label, T[i], T[j], D[T[i].label, T[j].label] / 2)
+	ck = Node(label, T[i], T[j])				# create a new tree (parent)
+	ck.h = D[T[i].label, T[j].label] / 2		# ck.h = distance from ck to leaves
+	T[i].dist2parent = ck.h - T[i].h
+	T[j].dist2parent = ck.h - T[j].h
 	for l,node in enumerate(T):
 		if l!=i and l!=j:
 			dkl=(D[T[i].label,T[l].label]*T[i].size + D[T[j].label,T[l].label]*T[j].size)/(T[i].size + T[j].size)
@@ -60,13 +73,10 @@ def ClosestPair(D, T):
 
 def UPGMA(distance_file):
 	Distance, Trees = Initialize(distance_file)
-	print(Trees)
 	while len(Trees) > 1:
 		i, j = ClosestPair(Distance, Trees)
 		Merge(Distance,Trees,i,j)
 
 	Trees[0].Newick()
 
-
 UPGMA("phylo_distance.txt")
-
